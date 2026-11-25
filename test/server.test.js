@@ -2,63 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { io: connect } = require('socket.io-client');
-const { createServer, cleanMessage, cleanSignal } = require('../src/server');
-
-const quiet = { info() {}, warn() {}, error() {} };
-
-async function startServer(options = {}) {
-  const server = createServer({ logger: quiet, fallbackMs: 200, ...options });
-  const { port } = await server.listen(0, '127.0.0.1');
-  const url = `http://127.0.0.1:${port}`;
-  const clients = [];
-  return {
-    server,
-    url,
-    async client() {
-      const socket = connect(url, { transports: ['websocket'], forceNew: true, reconnection: false });
-      clients.push(socket);
-      await once(socket, 'connect');
-      return socket;
-    },
-    async stop() {
-      clients.forEach((c) => c.disconnect());
-      await server.close();
-    },
-  };
-}
-
-function once(socket, event, timeoutMs = 2000) {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`Timed out waiting for "${event}"`)), timeoutMs);
-    socket.once(event, (data) => {
-      clearTimeout(timer);
-      resolve(data);
-    });
-  });
-}
-
-function never(socket, event, ms = 150) {
-  return new Promise((resolve, reject) => {
-    const handler = () => reject(new Error(`Unexpected "${event}"`));
-    socket.once(event, handler);
-    setTimeout(() => {
-      socket.off(event, handler);
-      resolve();
-    }, ms);
-  });
-}
-
-async function pair(ctx, opts = {}) {
-  const a = await ctx.client();
-  const b = await ctx.client();
-  const aMatched = once(a, 'matched');
-  const bMatched = once(b, 'matched');
-  a.emit('find', { mode: 'text', seq: 1, ...opts });
-  await once(a, 'searching');
-  b.emit('find', { mode: 'text', seq: 7, ...opts });
-  return { a, b, aInfo: await aMatched, bInfo: await bMatched };
-}
+const { cleanMessage, cleanSignal } = require('../src/server');
+const { startServer, once, never, pair, connect } = require('./helpers');
 
 test('cleanMessage strips control characters and enforces length', () => {
   assert.equal(cleanMessage('  hi\u0007 there  ', 100), 'hi there');
@@ -127,6 +72,16 @@ test('online count is sent on connect', async (t) => {
   const firstForB = await once(b, 'online');
   assert.equal(firstForB, 2);
   assert.ok(typeof (await counted.catch(() => 2)) === 'number');
+});
+
+test('random chat needs a profile', async (t) => {
+  const ctx = await startServer();
+  t.after(() => ctx.stop());
+  const anon = await ctx.client({ register: false });
+  assert.deepEqual(anon.session, { user: null });
+  const required = once(anon, 'auth_required');
+  anon.emit('find', { mode: 'text' });
+  await required;
 });
 
 test('matches by shared interest and reports the common ones', async (t) => {

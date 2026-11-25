@@ -7,6 +7,10 @@ const express = require('express');
 const { Server } = require('socket.io');
 const { Matchmaker, normalizeInterests, MODES, MAX_INTERESTS } = require('./matchmaker');
 const { Moderation } = require('./moderation');
+const { Store } = require('./store');
+const { createSocial, publicUser } = require('./social');
+const { AVATAR_EMOJIS, AVATAR_COLORS } = require('./avatars');
+const { MAX_IMAGE_BYTES } = require('./media');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
@@ -24,6 +28,8 @@ const DEFAULTS = {
   iceServers: DEFAULT_ICE_SERVERS,
   trustProxy: false,
   onlineBroadcastMs: 3000,
+  dataDir: null,
+  store: null,
   logger: console,
 };
 
@@ -36,7 +42,7 @@ function securityHeaders(req, res, next) {
       "default-src 'self'",
       "script-src 'self'",
       "style-src 'self'",
-      "img-src 'self' data:",
+      "img-src 'self' data: blob:",
       "media-src 'self' blob: mediastream:",
       "connect-src 'self'",
       "frame-ancestors 'none'",
@@ -85,9 +91,24 @@ function cleanSignal(data) {
   return null;
 }
 
+/** Sliding-window rate limit per socket and bucket name. */
+function allow(socket, bucket, limit, windowMs) {
+  const now = Date.now();
+  const buckets = socket.data.rate || (socket.data.rate = {});
+  const times = (buckets[bucket] || []).filter((t) => now - t < windowMs);
+  if (times.length >= limit) {
+    buckets[bucket] = times;
+    return false;
+  }
+  times.push(now);
+  buckets[bucket] = times;
+  return true;
+}
+
 function createServer(options = {}) {
   const config = { ...DEFAULTS, ...options };
   const log = config.logger;
+  const store = config.store || new Store({ dir: config.dataDir });
 
   const app = express();
   app.disable('x-powered-by');
@@ -95,7 +116,8 @@ function createServer(options = {}) {
   app.use(securityHeaders);
 
   const httpServer = http.createServer(app);
-  const io = new Server(httpServer, { maxHttpBufferSize: 64 * 1024 });
+  // Snaps are sent as binary over the socket, so allow a bit more than the image limit.
+  const io = new Server(httpServer, { maxHttpBufferSize: MAX_IMAGE_BYTES + 256 * 1024 });
 
   const onlineCount = () => io.of('/').sockets.size;
 
@@ -105,6 +127,8 @@ function createServer(options = {}) {
       iceServers: config.iceServers,
       maxMessageLength: config.maxMessageLength,
       maxInterests: MAX_INTERESTS,
+      maxImageBytes: MAX_IMAGE_BYTES,
+      avatars: { emojis: AVATAR_EMOJIS, colors: AVATAR_COLORS },
     });
   });
   app.get('/api/stats', (req, res) => {
@@ -126,6 +150,16 @@ function createServer(options = {}) {
     return partner;
   };
 
+  const social = createSocial({
+    io,
+    store,
+    log,
+    getPartner,
+    allow,
+    cleanMessage,
+    maxMessageLength: config.maxMessageLength,
+  });
+
   const matchmaker = new Matchmaker({
     fallbackMs: config.fallbackMs,
     canPair(aId, bId) {
@@ -140,6 +174,8 @@ function createServer(options = {}) {
       const chatId = crypto.randomUUID();
       arrived.data.partnerId = waitingId;
       waiting.data.partnerId = arrivedId;
+      arrived.data.wantsAdd = null;
+      waiting.data.wantsAdd = null;
       // The person who was already waiting creates the WebRTC offer.
       arrived.emit('matched', { chatId, mode, common, initiator: false, seq: arrived.data.seq });
       waiting.emit('matched', { chatId, mode, common, initiator: true, seq: waiting.data.seq });
@@ -149,8 +185,11 @@ function createServer(options = {}) {
   function endChat(socket) {
     const partner = getPartner(socket);
     socket.data.partnerId = null;
+    socket.data.wantsAdd = null;
+    social.dropStrangerSnaps(socket.id);
     if (partner) {
       partner.data.partnerId = null;
+      partner.data.wantsAdd = null;
       partner.emit('partner_left');
     }
   }
@@ -166,16 +205,28 @@ function createServer(options = {}) {
   io.on('connection', (socket) => {
     socket.data = {
       ip: clientAddress(socket),
+      user: null,
       partnerId: null,
+      wantsAdd: null,
       mode: null,
       blocked: new Set(),
       messageTimes: [],
       seq: 0,
     };
+
+    const user = store.userByToken(socket.handshake.auth && socket.handshake.auth.token);
+    if (user) social.attachUser(socket, user);
+    socket.emit('session', { user: publicUser(user) });
     socket.emit('online', onlineCount());
+
+    social.register(socket);
 
     socket.on('find', (payload) => {
       const opts = payload && typeof payload === 'object' ? payload : {};
+      if (!socket.data.user) {
+        socket.emit('auth_required');
+        return;
+      }
       const banned = moderation.banRemaining(socket.data.ip);
       if (banned) {
         matchmaker.dequeue(socket.id);
@@ -258,6 +309,7 @@ function createServer(options = {}) {
     socket.on('disconnect', () => {
       matchmaker.dequeue(socket.id);
       endChat(socket);
+      social.detachUser(socket);
     });
   });
 
@@ -271,7 +323,11 @@ function createServer(options = {}) {
   }, config.onlineBroadcastMs);
   broadcastTimer.unref();
 
-  const pruneTimer = setInterval(() => moderation.prune(), 10 * 60 * 1000);
+  store.prune();
+  const pruneTimer = setInterval(() => {
+    moderation.prune();
+    store.prune();
+  }, 10 * 60 * 1000);
   pruneTimer.unref();
 
   function listen(port, host) {
@@ -287,10 +343,11 @@ function createServer(options = {}) {
   function close() {
     clearInterval(broadcastTimer);
     clearInterval(pruneTimer);
+    store.flush();
     return new Promise((resolve) => io.close(() => resolve()));
   }
 
-  return { app, httpServer, io, matchmaker, moderation, listen, close };
+  return { app, httpServer, io, matchmaker, moderation, store, listen, close };
 }
 
-module.exports = { createServer, cleanMessage, cleanSignal, DEFAULT_ICE_SERVERS };
+module.exports = { createServer, cleanMessage, cleanSignal, allow, DEFAULT_ICE_SERVERS };

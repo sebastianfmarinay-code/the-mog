@@ -1,0 +1,11 @@
+{
+  "name": "the mog",
+  "short_name": "the mog",
+  "description": "Meet strangers, swap disappearing snaps, keep streaks with friends.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#131211",
+  "theme_color": "#e5461a",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

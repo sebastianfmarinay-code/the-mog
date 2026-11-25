@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>the mog — talk to strangers</title>
-  <meta name="description" content="Anonymous text and video chat with random strangers. Add your interests to meet people who are into the same things.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <title>the mog — meet, snap, repeat</title>
+  <meta name="description" content="Meet random strangers over text or video, swap disappearing snaps, keep streaks with friends and post stories.">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/css/style.css">
   <script src="/socket.io/socket.io.js" defer></script>
-  <script src="/js/app.js" defer></script>
+  <script src="/js/main.js" type="module"></script>
 </head>
 <body>
-  <!-- Shared icon sprite -->
   <svg class="sprite" aria-hidden="true" focusable="false">
     <symbol id="i-logo" viewBox="0 0 32 32">
       <path d="M16 3C8.8 3 3 8.4 3 15c0 3.3 1.4 6.2 3.7 8.4L5.5 29l5.6-2.7c1.5.5 3.1.7 4.9.7 7.2 0 13-5.4 13-12S23.2 3 16 3Z" fill="currentColor"/>
@@ -30,157 +30,391 @@
     <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5M5 4.5c4-2 7 2 11 0l2-.8v9.5l-2 .8c-4 2-7-2-11 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-send" viewBox="0 0 24 24"><path d="M4.5 12 3.3 5.1c-.2-1 .9-1.8 1.8-1.3l14.6 7.3c.9.4.9 1.7 0 2.2L5.1 20.6c-.9.5-2-.3-1.8-1.3L4.5 12Zm0 0h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
-    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
-    <symbol id="i-shirt" viewBox="0 0 24 24"><path d="m8.5 3.5-5 2.5 1.8 4.2 2.2-.9V20.5h9V9.3l2.2.9 1.8-4.2-5-2.5a3.5 3.5 0 0 1-7 0Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
-    <symbol id="i-mask" viewBox="0 0 24 24"><path d="M3 8.5c3-1.3 6-1.5 9-.4 3-1.1 6-.9 9 .4 0 5.5-2.6 8-5.5 8-1.6 0-2.6-1.2-3.5-2.6-.9 1.4-1.9 2.6-3.5 2.6C5.6 16.5 3 14 3 8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7.5 11h1.5M15 11h1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-meet" viewBox="0 0 24 24"><circle cx="8.5" cy="9" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="16.5" cy="10.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.8 19.5c.6-3 2.9-4.8 5.7-4.8s5.1 1.8 5.7 4.8M14.5 15.3c.6-.3 1.3-.4 2-.4 2.3 0 4.1 1.5 4.6 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-chats" viewBox="0 0 24 24"><path d="M12 3.5c-4.7 0-8.5 3.3-8.5 7.5 0 2 .9 3.9 2.4 5.2l-.7 3.8 3.9-1.9c.9.3 1.9.4 2.9.4 4.7 0 8.5-3.3 8.5-7.5S16.7 3.5 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="currentColor"/></symbol>
+    <symbol id="i-stories" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4.2 2.4"/><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-me" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c.8-3.6 3.8-5.8 7.5-5.8s6.7 2.2 7.5 5.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-flip" viewBox="0 0 24 24"><path d="M4.5 9.5A8 8 0 0 1 19 7.2M19.5 14.5A8 8 0 0 1 5 16.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M19.5 3.5v4h-4M4.5 20.5v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M10 3.5 11.6 8 16 9.5l-4.4 1.6L10 15.5l-1.6-4.4L4 9.5 8.4 8 10 3.5ZM17.5 14l.9 2.3 2.3.9-2.3.9-.9 2.4-.9-2.4-2.3-.9 2.3-.9.9-2.3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="i-type" viewBox="0 0 24 24"><path d="M5 6.5V5h14v1.5M12 5v14M9 19h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sticker" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.3 14.2a4.5 4.5 0 0 0 7.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9.2" cy="10" r="1.2" fill="currentColor"/><circle cx="14.8" cy="10" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path d="m14.5 5.5 4 4M4 20l1-4.5L15.8 4.7a1.6 1.6 0 0 1 2.3 0l1.2 1.2c.6.6.6 1.6 0 2.3L8.5 19 4 20Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4.5 9.5 9 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5h9a5.5 5.5 0 0 1 0 11h-3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="9.5" cy="8.5" r="3.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2.8 19.5c.7-3.3 3.4-5.3 6.7-5.3 1.4 0 2.7.4 3.8 1M18.5 13v6M15.5 16h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 6.5h15M9.5 6.5V4.5h5v2M6.5 6.5l1 13h9l1-13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    <symbol id="i-dice" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="9" cy="9" r="1.3" fill="currentColor"/><circle cx="15" cy="15" r="1.3" fill="currentColor"/><circle cx="15" cy="9" r="1.3" fill="currentColor"/><circle cx="9" cy="15" r="1.3" fill="currentColor"/></symbol>
   </svg>
 
-  <!-- ============ HOME ============ -->
-  <div id="home" class="view view--home">
-    <header class="site-header">
-      <a class="brand" href="/" aria-label="the mog home">
-        <svg class="brand__mark" aria-hidden="true"><use href="#i-logo"/></svg>
-        <span class="brand__name">the mog</span>
-      </a>
-      <p class="online"><span class="online__dot" aria-hidden="true"></span><span><span data-online>—</span> online now</span></p>
-    </header>
+  <!-- Shown until we know whether this device has a profile -->
+  <div id="boot" class="boot" aria-live="polite">
+    <svg class="boot__logo" aria-hidden="true"><use href="#i-logo"/></svg>
+    <p id="boot-text" class="boot__text">Connecting…</p>
+  </div>
 
-    <main class="home">
-      <section class="hero">
-        <h1 class="hero__title">Talk to someone <span class="hero__accent">new.</span></h1>
-        <p class="hero__lead">Anonymous text and video chat with random strangers. Add a few interests and we'll try to pair you with someone into the same stuff.</p>
-      </section>
+  <!-- ============ ONBOARDING ============ -->
+  <section id="onboarding" class="onboarding" hidden aria-labelledby="ob-title">
+    <form id="ob-form" class="onboarding__card" novalidate>
+      <div class="brand"><svg class="brand__mark" aria-hidden="true"><use href="#i-logo"/></svg><span class="brand__name">the mog</span></div>
+      <h1 id="ob-title" class="onboarding__title">Meet strangers. Swap snaps. Keep the streak.</h1>
+      <p class="onboarding__lead">No email, no password — just pick a look and a username.</p>
+      <p id="ob-notice" class="alert" hidden></p>
 
-      <section class="start-card" aria-labelledby="start-heading">
-        <div id="home-alert" class="alert" role="alert" hidden></div>
+      <div class="ob-preview">
+        <span id="ob-avatar" class="avatar avatar--xl"></span>
+      </div>
+      <fieldset class="picker">
+        <legend class="field-label">Your look</legend>
+        <div id="ob-emojis" class="emoji-grid"></div>
+        <div id="ob-colors" class="color-row"></div>
+      </fieldset>
 
-        <label class="field-label" for="tag-input">What are you into? <span class="field-label__hint">optional</span></label>
-        <div id="tag-box" class="tag-box">
-          <ul id="tag-list" class="tag-list" aria-label="Your interests"></ul>
-          <input id="tag-input" class="tag-input" type="text" autocomplete="off" enterkeyhint="done"
-                 maxlength="32" placeholder="music, gaming, anime… press Enter">
-        </div>
-        <label class="check">
-          <input id="fallback" type="checkbox" checked>
-          <span>If nobody shares my interests, match me with anyone</span>
-        </label>
+      <label class="field-label" for="ob-username">Username</label>
+      <div class="username-field">
+        <span class="username-field__at" aria-hidden="true">@</span>
+        <input id="ob-username" class="username-field__input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="20" required>
+        <button id="ob-shuffle" class="icon-btn-plain" type="button" aria-label="Suggest a random username" title="Random username">
+          <svg aria-hidden="true"><use href="#i-dice"/></svg>
+        </button>
+      </div>
+      <p id="ob-username-hint" class="field-hint">3–20 characters: letters, numbers, _ and .</p>
 
-        <h2 id="start-heading" class="start-card__heading">Start chatting</h2>
-        <div class="start-buttons">
-          <button id="start-text" class="start-btn start-btn--text" type="button">
-            <svg class="start-btn__icon" aria-hidden="true"><use href="#i-text"/></svg>
-            <span class="start-btn__label">Text</span>
-            <span class="start-btn__sub">Just words</span>
-          </button>
-          <button id="start-video" class="start-btn start-btn--video" type="button">
-            <svg class="start-btn__icon" aria-hidden="true"><use href="#i-video"/></svg>
-            <span class="start-btn__label">Video</span>
-            <span class="start-btn__sub">Face to face</span>
-          </button>
-        </div>
-
-        <label id="agree-row" class="check check--agree">
-          <input id="agree" type="checkbox">
-          <span>I'm 18 or older and I'll follow the rules below.</span>
-        </label>
-      </section>
-
-      <section class="rules" aria-labelledby="rules-heading">
-        <h2 id="rules-heading" class="rules__heading">House rules</h2>
-        <ul class="rules__list">
-          <li class="rule">
-            <svg class="rule__icon" aria-hidden="true"><use href="#i-heart"/></svg>
-            <div><h3>Be decent</h3><p>No harassment, hate or threats. Skip anyone you don't vibe with.</p></div>
-          </li>
-          <li class="rule">
-            <svg class="rule__icon" aria-hidden="true"><use href="#i-shirt"/></svg>
-            <div><h3>Keep it clothed</h3><p>No nudity or sexual content on camera. Reported users get blocked.</p></div>
-          </li>
-          <li class="rule">
-            <svg class="rule__icon" aria-hidden="true"><use href="#i-mask"/></svg>
-            <div><h3>Stay anonymous</h3><p>Don't share your name, address, socials or anything that identifies you.</p></div>
-          </li>
-          <li class="rule">
-            <svg class="rule__icon" aria-hidden="true"><use href="#i-flag"/></svg>
-            <div><h3>Report bad actors</h3><p>Use the flag in a chat. Repeat offenders are temporarily banned.</p></div>
-          </li>
+      <details class="ob-rules">
+        <summary>House rules</summary>
+        <ul>
+          <li><strong>Be decent.</strong> No harassment, hate or threats.</li>
+          <li><strong>Keep it clothed.</strong> No nudity or sexual content in video or snaps.</li>
+          <li><strong>Stay anonymous.</strong> Don't share your real name, address or socials with strangers.</li>
+          <li><strong>Report bad actors.</strong> Repeat offenders get banned.</li>
         </ul>
-      </section>
-    </main>
+      </details>
+      <label id="ob-agree-row" class="check check--agree">
+        <input id="ob-agree" type="checkbox">
+        <span>I'm 18 or older and I'll follow the house rules.</span>
+      </label>
+      <p id="ob-error" class="field-error" role="alert" hidden></p>
+      <button id="ob-submit" class="btn btn--accent btn--block" type="submit">Let's go</button>
+    </form>
+  </section>
 
-    <footer class="site-footer">
-      <p>Chats aren't stored. Video goes directly between you and the stranger (peer-to-peer). Strangers may not be who they say they are — be careful.</p>
-    </footer>
-  </div>
-
-  <!-- ============ CHAT ============ -->
-  <div id="chat" class="view view--chat" hidden>
-    <header class="chat-header">
-      <a id="chat-home" class="brand brand--small" href="/" aria-label="Leave chat and go home">
-        <svg class="brand__mark" aria-hidden="true"><use href="#i-logo"/></svg>
-        <span class="brand__name">the mog</span>
-      </a>
-      <span id="mode-pill" class="pill">Text chat</span>
-      <p class="online online--compact"><span class="online__dot" aria-hidden="true"></span><span><span data-online>—</span> online</span></p>
+  <!-- ============ APP ============ -->
+  <div id="app" class="app" data-tab="meet" hidden>
+    <header class="topbar">
+      <a href="#me" id="top-avatar" class="topbar__me" aria-label="Your profile"></a>
+      <h1 id="top-title" class="topbar__title">Meet</h1>
+      <p class="online"><span class="online__dot" aria-hidden="true"></span><span><span data-online>—</span> online</span></p>
     </header>
 
-    <main id="chat-main" class="chat-main">
-      <section id="videos" class="videos" aria-label="Video" hidden>
-        <div class="tile tile--remote">
-          <video id="remote-video" autoplay playsinline></video>
-          <div id="remote-overlay" class="tile__overlay">
-            <span class="spinner" aria-hidden="true"></span>
-            <span id="remote-status">Looking for a stranger…</span>
+    <nav class="tabbar" aria-label="Main">
+      <a class="tab" href="#meet" data-tab="meet"><svg aria-hidden="true"><use href="#i-meet"/></svg><span>Meet</span><b class="tab__badge" data-badge="meet" hidden></b></a>
+      <a class="tab" href="#chats" data-tab="chats"><svg aria-hidden="true"><use href="#i-chats"/></svg><span>Chats</span><b class="tab__badge" data-badge="chats" hidden></b></a>
+      <a class="tab tab--camera" href="#camera" data-tab="camera" aria-label="Camera"><svg aria-hidden="true"><use href="#i-camera"/></svg><span>Camera</span></a>
+      <a class="tab" href="#stories" data-tab="stories"><svg aria-hidden="true"><use href="#i-stories"/></svg><span>Stories</span><b class="tab__dot" data-badge="stories" hidden></b></a>
+      <a class="tab" href="#me" data-tab="me"><svg aria-hidden="true"><use href="#i-me"/></svg><span>Me</span></a>
+    </nav>
+
+    <main class="views">
+      <!-- ===== MEET ===== -->
+      <section id="view-meet" class="view" data-view="meet" aria-label="Meet strangers">
+        <div id="meet-lobby" class="lobby">
+          <div class="lobby__hero">
+            <h2 class="hero__title">Talk to someone <span class="hero__accent">new.</span></h2>
+            <p class="hero__lead">Random text or video chat with strangers. Swap disappearing snaps, try filters, and if you click — add each other as friends.</p>
           </div>
-          <span class="tile__tag">Stranger</span>
+
+          <div class="start-card">
+            <p id="meet-alert" class="alert" role="alert" hidden></p>
+            <label class="field-label" for="tag-input">What are you into? <span class="field-label__hint">optional</span></label>
+            <div id="tag-box" class="tag-box">
+              <ul id="tag-list" class="tag-list" aria-label="Your interests"></ul>
+              <input id="tag-input" class="tag-input" type="text" autocomplete="off" enterkeyhint="done" maxlength="32" placeholder="music, gaming, anime… press Enter">
+            </div>
+            <label class="check">
+              <input id="fallback" type="checkbox" checked>
+              <span>If nobody shares my interests, match me with anyone</span>
+            </label>
+            <div class="start-buttons">
+              <button id="start-text" class="start-btn start-btn--text" type="button">
+                <svg class="start-btn__icon" aria-hidden="true"><use href="#i-text"/></svg>
+                <span class="start-btn__label">Text</span>
+                <span class="start-btn__sub">Just words</span>
+              </button>
+              <button id="start-video" class="start-btn start-btn--video" type="button">
+                <svg class="start-btn__icon" aria-hidden="true"><use href="#i-video"/></svg>
+                <span class="start-btn__label">Video</span>
+                <span class="start-btn__sub">Face to face</span>
+              </button>
+            </div>
+          </div>
+
+          <ul class="perks">
+            <li><span class="perks__emoji" aria-hidden="true">📸</span><div><strong>Disappearing snaps</strong><p>Send a stranger a snap. They see it once, then it's gone.</p></div></li>
+            <li><span class="perks__emoji" aria-hidden="true">✨</span><div><strong>Filters</strong><p>Golden, Thermal, VHS — or Pixel to hide your face on video.</p></div></li>
+            <li><span class="perks__emoji" aria-hidden="true">🤝</span><div><strong>Add friend</strong><p>If you both tap it, you swap usernames and can keep chatting.</p></div></li>
+            <li><span class="perks__emoji" aria-hidden="true">🔥</span><div><strong>Streaks</strong><p>Snap a friend every day and watch the streak grow.</p></div></li>
+          </ul>
         </div>
-        <div class="tile tile--local">
-          <video id="local-video" autoplay playsinline muted></video>
-          <span class="tile__tag">You</span>
-          <div class="tile__controls">
-            <button id="toggle-mic" class="icon-btn" type="button" aria-pressed="false" aria-label="Mute microphone" title="Mute microphone">
-              <svg aria-hidden="true"><use href="#i-mic"/></svg>
-            </button>
-            <button id="toggle-cam" class="icon-btn" type="button" aria-pressed="false" aria-label="Turn camera off" title="Turn camera off">
-              <svg aria-hidden="true"><use href="#i-cam"/></svg>
-            </button>
+
+        <div id="meet-live" class="live" hidden>
+          <section id="videos" class="videos" aria-label="Video" hidden>
+            <div class="tile tile--remote">
+              <video id="remote-video" autoplay playsinline></video>
+              <div id="remote-overlay" class="tile__overlay">
+                <span class="spinner" aria-hidden="true"></span>
+                <span id="remote-status">Looking for a stranger…</span>
+              </div>
+              <span id="remote-tag" class="tile__tag">Stranger</span>
+            </div>
+            <div class="tile tile--local">
+              <video id="local-video" class="is-mirrored" autoplay playsinline muted></video>
+              <span class="tile__tag">You</span>
+              <div class="tile__controls">
+                <button id="meet-filters-btn" class="icon-btn" type="button" aria-pressed="false" aria-label="Filters" title="Filters">
+                  <svg aria-hidden="true"><use href="#i-sparkles"/></svg>
+                </button>
+                <button id="toggle-mic" class="icon-btn" type="button" aria-pressed="false" aria-label="Mute microphone" title="Mute microphone">
+                  <svg aria-hidden="true"><use href="#i-mic"/></svg>
+                </button>
+                <button id="toggle-cam" class="icon-btn" type="button" aria-pressed="false" aria-label="Turn camera off" title="Turn camera off">
+                  <svg aria-hidden="true"><use href="#i-cam"/></svg>
+                </button>
+              </div>
+              <div id="meet-filters" class="filter-strip filter-strip--compact" hidden></div>
+            </div>
+          </section>
+
+          <section class="panel" aria-label="Chat">
+            <div class="panel__bar">
+              <button id="meet-leave" class="round-btn" type="button" aria-label="Leave chat" title="Leave">
+                <svg aria-hidden="true"><use href="#i-back"/></svg>
+              </button>
+              <p class="status"><span id="status-dot" class="status__dot" aria-hidden="true"></span><span id="status-text">Not connected</span></p>
+              <div class="panel__tools">
+                <button id="stranger-add" class="tool-btn tool-btn--accent" type="button" disabled>
+                  <svg aria-hidden="true"><use href="#i-user-plus"/></svg><span id="stranger-add-label">Add friend</span>
+                </button>
+                <label class="switch" title="Automatically find a new stranger when one leaves">
+                  <input id="auto-next" type="checkbox">
+                  <span class="switch__track" aria-hidden="true"></span>
+                  <span class="switch__label">Auto</span>
+                </label>
+                <button id="report" class="tool-btn tool-btn--icon" type="button" aria-label="Report" title="Report" disabled>
+                  <svg aria-hidden="true"><use href="#i-flag"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div id="log" class="log" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <p id="typing" class="typing" hidden><span class="typing__dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="typing-who">Stranger</span>&nbsp;is typing</p>
+
+            <form id="composer" class="composer" autocomplete="off">
+              <button id="next" class="next-btn" type="button">
+                <span id="next-label" class="next-btn__label">New</span>
+                <kbd class="next-btn__kbd">Esc</kbd>
+              </button>
+              <button id="meet-snap" class="snap-btn" type="button" aria-label="Send a snap" title="Send a snap" disabled>
+                <svg aria-hidden="true"><use href="#i-cam"/></svg>
+              </button>
+              <textarea id="message" class="composer__input" rows="1" placeholder="Type a message…" aria-label="Message" disabled></textarea>
+              <button id="send" class="send-btn" type="submit" aria-label="Send" disabled>
+                <svg aria-hidden="true"><use href="#i-send"/></svg>
+              </button>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <!-- ===== CHATS ===== -->
+      <section id="view-chats" class="view" data-view="chats" aria-label="Chats" hidden>
+        <div class="chats">
+          <div class="chats__list">
+            <div class="pane-head">
+              <h2 class="pane-head__title">Friends</h2>
+              <button id="add-friend-btn" class="pill-btn" type="button"><svg aria-hidden="true"><use href="#i-user-plus"/></svg>Add</button>
+            </div>
+            <div id="requests" class="requests" hidden></div>
+            <ul id="friend-list" class="friend-list"></ul>
+            <div id="friends-empty" class="empty" hidden>
+              <span class="empty__emoji" aria-hidden="true">🫥</span>
+              <h3>No friends yet</h3>
+              <p>Meet strangers and both tap <strong>Add friend</strong>, or add someone by their username.</p>
+              <a class="btn btn--accent" href="#meet">Meet people</a>
+            </div>
+          </div>
+
+          <div id="convo" class="convo" hidden>
+            <header class="convo__head">
+              <button id="convo-back" class="round-btn" type="button" aria-label="Back to friends"><svg aria-hidden="true"><use href="#i-back"/></svg></button>
+              <span id="convo-avatar" class="avatar avatar--md"></span>
+              <div class="convo__who">
+                <h2 id="convo-name" class="convo__name"></h2>
+                <p id="convo-sub" class="convo__sub"></p>
+              </div>
+              <button id="convo-remove" class="tool-btn" type="button">Unfriend</button>
+            </header>
+            <div id="convo-log" class="convo__log" role="log" aria-live="polite"></div>
+            <p id="convo-typing" class="typing" hidden><span class="typing__dots" aria-hidden="true"><i></i><i></i><i></i></span><span id="convo-typing-who"></span>&nbsp;is typing</p>
+            <form id="convo-form" class="composer composer--dm" autocomplete="off">
+              <button id="convo-camera" class="snap-btn" type="button" aria-label="Send a snap" title="Send a snap">
+                <svg aria-hidden="true"><use href="#i-cam"/></svg>
+              </button>
+              <textarea id="convo-input" class="composer__input" rows="1" placeholder="Send a chat" aria-label="Message"></textarea>
+              <button id="convo-send" class="send-btn" type="submit" aria-label="Send" disabled>
+                <svg aria-hidden="true"><use href="#i-send"/></svg>
+              </button>
+            </form>
+          </div>
+          <div id="convo-placeholder" class="convo-placeholder">
+            <span class="empty__emoji" aria-hidden="true">💬</span>
+            <p>Pick a friend to chat or view their snaps.</p>
           </div>
         </div>
       </section>
 
-      <section class="panel" aria-label="Chat">
-        <div class="panel__bar">
-          <p class="status"><span id="status-dot" class="status__dot" aria-hidden="true"></span><span id="status-text">Not connected</span></p>
-          <div class="panel__tools">
-            <label class="switch" title="Automatically find a new stranger when one leaves">
-              <input id="auto-next" type="checkbox">
-              <span class="switch__track" aria-hidden="true"></span>
-              <span>Auto-next</span>
-            </label>
-            <button id="report" class="tool-btn" type="button" disabled>
-              <svg aria-hidden="true"><use href="#i-flag"/></svg><span>Report</span>
+      <!-- ===== CAMERA ===== -->
+      <section id="view-camera" class="view view--camera" data-view="camera" aria-label="Camera" hidden>
+        <div class="cam">
+          <video id="cam-video" class="cam__video is-mirrored" autoplay playsinline muted></video>
+          <div id="cam-gate" class="cam__gate">
+            <span class="cam__gate-icon" aria-hidden="true">📸</span>
+            <h2>Snap something</h2>
+            <p id="cam-gate-text">Turn on your camera to take snaps with filters.</p>
+            <button id="cam-enable" class="btn btn--accent" type="button">Turn on camera</button>
+          </div>
+          <p id="cam-target" class="cam__target" hidden></p>
+          <div class="cam__top">
+            <button id="cam-flip" class="cam-btn" type="button" aria-label="Switch camera" title="Switch camera" hidden>
+              <svg aria-hidden="true"><use href="#i-flip"/></svg>
             </button>
           </div>
+          <div class="cam__bottom">
+            <p id="cam-filter-name" class="cam__filter-name" aria-live="polite"></p>
+            <div id="cam-filters" class="filter-strip"></div>
+            <button id="cam-shutter" class="shutter" type="button" aria-label="Take a snap" disabled></button>
+          </div>
         </div>
+      </section>
 
-        <div id="log" class="log" role="log" aria-live="polite" aria-relevant="additions"></div>
-        <p id="typing" class="typing" hidden><span class="typing__dots" aria-hidden="true"><i></i><i></i><i></i></span>Stranger is typing</p>
+      <!-- ===== STORIES ===== -->
+      <section id="view-stories" class="view" data-view="stories" aria-label="Stories" hidden>
+        <div class="stories">
+          <div class="my-story">
+            <button id="my-story" class="my-story__main" type="button">
+              <span id="my-story-avatar" class="avatar avatar--lg"></span>
+              <span class="my-story__text">
+                <strong>My story</strong>
+                <span id="my-story-sub">Tap to add a snap · visible to friends for 24h</span>
+              </span>
+            </button>
+            <button id="my-story-add" class="my-story__add" type="button" aria-label="Add a snap to my story" title="Add to my story"><svg aria-hidden="true"><use href="#i-plus"/></svg></button>
+          </div>
+          <h3 class="section-label">Friends' stories</h3>
+          <ul id="story-list" class="story-grid"></ul>
+          <div id="stories-empty" class="empty" hidden>
+            <span class="empty__emoji" aria-hidden="true">🌙</span>
+            <h3>Nothing new</h3>
+            <p>When your friends post to their story, it'll show up here for 24 hours.</p>
+          </div>
+        </div>
+      </section>
 
-        <form id="composer" class="composer" autocomplete="off">
-          <button id="next" class="next-btn" type="button">
-            <span id="next-label" class="next-btn__label">New</span>
-            <kbd class="next-btn__kbd">Esc</kbd>
-          </button>
-          <textarea id="message" class="composer__input" rows="1" placeholder="Type a message…" aria-label="Message" disabled></textarea>
-          <button id="send" class="send-btn" type="submit" aria-label="Send" disabled>
-            <svg aria-hidden="true"><use href="#i-send"/></svg>
-          </button>
-        </form>
+      <!-- ===== ME ===== -->
+      <section id="view-me" class="view" data-view="me" aria-label="Your profile" hidden>
+        <div class="me">
+          <div class="me__card">
+            <span id="me-avatar" class="avatar avatar--xl"></span>
+            <h2 id="me-name" class="me__name"></h2>
+            <p id="me-stats" class="me__stats"></p>
+          </div>
+
+          <section class="me__section" aria-labelledby="me-look-title">
+            <h3 id="me-look-title" class="section-label">Change your look</h3>
+            <div id="me-emojis" class="emoji-grid"></div>
+            <div id="me-colors" class="color-row"></div>
+          </section>
+
+          <section class="me__section" aria-labelledby="me-story-title">
+            <h3 id="me-story-title" class="section-label">My story</h3>
+            <ul id="me-stories" class="me-stories"></ul>
+            <p id="me-stories-empty" class="muted">You haven't posted anything in the last 24 hours.</p>
+          </section>
+
+          <section class="me__section" aria-labelledby="me-device-title">
+            <h3 id="me-device-title" class="section-label">This device</h3>
+            <p class="muted">Your profile is saved in this browser — there's no password. If you sign out or clear your browser data, you'll lose this username and your friends.</p>
+            <button id="me-signout" class="btn btn--ghost" type="button">Sign out</button>
+          </section>
+        </div>
       </section>
     </main>
   </div>
 
-  <!-- ============ REPORT DIALOG ============ -->
+  <!-- ============ SNAP EDITOR ============ -->
+  <div id="editor" class="editor" hidden role="dialog" aria-modal="true" aria-label="Edit snap">
+    <div id="editor-stage" class="editor__stage">
+      <canvas id="editor-photo" class="editor__photo"></canvas>
+      <canvas id="editor-draw" class="editor__draw"></canvas>
+      <div id="editor-stickers" class="editor__stickers"></div>
+      <div id="editor-caption" class="caption" hidden>
+        <input id="editor-caption-input" class="caption__input" type="text" maxlength="80" placeholder="Say something…" enterkeyhint="done" autocomplete="off">
+        <div id="editor-caption-grip" class="caption__grip"></div>
+      </div>
+    </div>
+    <button id="editor-close" class="ed-btn ed-btn--close" type="button" aria-label="Discard snap"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+    <div class="editor__tools" role="toolbar" aria-label="Snap tools">
+      <button id="tool-text" class="ed-btn" type="button" aria-label="Add caption" title="Caption"><svg aria-hidden="true"><use href="#i-type"/></svg></button>
+      <button id="tool-sticker" class="ed-btn" type="button" aria-pressed="false" aria-label="Stickers" title="Stickers"><svg aria-hidden="true"><use href="#i-sticker"/></svg></button>
+      <button id="tool-draw" class="ed-btn" type="button" aria-pressed="false" aria-label="Draw" title="Draw"><svg aria-hidden="true"><use href="#i-pen"/></svg></button>
+      <button id="tool-undo" class="ed-btn" type="button" aria-label="Undo drawing" title="Undo" hidden><svg aria-hidden="true"><use href="#i-undo"/></svg></button>
+      <button id="tool-timer" class="ed-btn ed-btn--timer" type="button" aria-label="Snap timer" title="How long they can see it"><span id="timer-label">5s</span></button>
+      <button id="tool-save" class="ed-btn" type="button" aria-label="Save to device" title="Save"><svg aria-hidden="true"><use href="#i-download"/></svg></button>
+    </div>
+    <div id="draw-colors" class="draw-colors" hidden></div>
+    <div id="sticker-tray" class="sticker-tray" hidden></div>
+    <div id="editor-trash" class="editor__trash" hidden><svg aria-hidden="true"><use href="#i-trash"/></svg></div>
+    <button id="editor-send" class="send-fab" type="button">Send to<svg aria-hidden="true"><use href="#i-send"/></svg></button>
+  </div>
+
+  <!-- ============ SEND SHEET ============ -->
+  <div id="send-sheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="send-title">
+      <header class="sheet__head">
+        <h2 id="send-title">Send to…</h2>
+        <button class="round-btn" type="button" data-close aria-label="Close"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+      </header>
+      <ul id="send-list" class="send-list"></ul>
+      <footer class="sheet__foot">
+        <p id="send-summary" class="sheet__summary">Pick who gets it</p>
+        <button id="send-go" class="btn btn--accent" type="button" disabled>Send<svg aria-hidden="true"><use href="#i-send"/></svg></button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ============ VIEWER (snaps & stories) ============ -->
+  <div id="viewer" class="viewer" hidden role="dialog" aria-modal="true" aria-label="Snap">
+    <div id="viewer-bars" class="viewer__bars"></div>
+    <header class="viewer__head">
+      <span id="viewer-avatar" class="avatar avatar--sm"></span>
+      <div class="viewer__who"><strong id="viewer-name"></strong><span id="viewer-time"></span></div>
+      <svg id="viewer-ring" class="viewer__ring" viewBox="0 0 36 36" aria-hidden="true" hidden>
+        <circle cx="18" cy="18" r="15" class="viewer__ring-track"/>
+        <circle cx="18" cy="18" r="15" class="viewer__ring-fill"/>
+      </svg>
+      <button id="viewer-close" class="round-btn round-btn--dark" type="button" aria-label="Close"><svg aria-hidden="true"><use href="#i-x"/></svg></button>
+    </header>
+    <div id="viewer-loading" class="viewer__loading"><span class="spinner" aria-hidden="true"></span></div>
+    <img id="viewer-img" class="viewer__img" alt="Snap" draggable="false">
+    <div id="viewer-tap" class="viewer__tap"></div>
+    <footer id="viewer-foot" class="viewer__foot" hidden></footer>
+  </div>
+
+  <!-- ============ DIALOGS ============ -->
   <dialog id="report-dialog" class="dialog" aria-labelledby="report-title">
     <form id="report-form" method="dialog" class="dialog__body">
       <h2 id="report-title">Report this stranger</h2>
@@ -199,5 +433,23 @@
       </div>
     </form>
   </dialog>
+
+  <dialog id="add-dialog" class="dialog" aria-labelledby="add-title">
+    <form id="add-form" method="dialog" class="dialog__body">
+      <h2 id="add-title">Add a friend</h2>
+      <p class="dialog__lead">Type their username. They'll get a friend request.</p>
+      <div class="username-field">
+        <span class="username-field__at" aria-hidden="true">@</span>
+        <input id="add-username" class="username-field__input" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="21" aria-label="Username">
+      </div>
+      <p id="add-error" class="field-error" role="alert" hidden></p>
+      <div class="dialog__actions">
+        <button class="btn btn--ghost" value="cancel" formnovalidate>Cancel</button>
+        <button id="add-submit" class="btn btn--accent" value="add">Send request</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
 </body>
 </html>

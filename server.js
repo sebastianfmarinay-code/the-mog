@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const { createServer, DEFAULT_ICE_SERVERS } = require('./src/server');
 
 function intFromEnv(name, fallback) {
@@ -22,7 +23,10 @@ function iceServersFromEnv() {
 const port = intFromEnv('PORT', 3000);
 const host = process.env.HOST || '0.0.0.0';
 
+const dataDir = path.resolve(process.env.DATA_DIR || path.join(__dirname, 'data'));
+
 const server = createServer({
+  dataDir,
   iceServers: iceServersFromEnv(),
   trustProxy: /^(1|true|yes)$/i.test(process.env.TRUST_PROXY || ''),
   fallbackMs: intFromEnv('INTEREST_FALLBACK_MS', 8000),
@@ -34,6 +38,7 @@ server
   .listen(port, host)
   .then(() => {
     console.log(`the mog is running at http://localhost:${port}`);
+    console.log(`Saving accounts and snaps in ${dataDir}`);
   })
   .catch((err) => {
     console.error('Failed to start server:', err.message);
