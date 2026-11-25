@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>the mog — talk to strangers</title>
+  <meta name="description" content="Anonymous text and video chat with random strangers. Add your interests to meet people who are into the same things.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#131211" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/js/app.js" defer></script>
+</head>
+<body>
+  <!-- Shared icon sprite -->
+  <svg class="sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-logo" viewBox="0 0 32 32">
+      <path d="M16 3C8.8 3 3 8.4 3 15c0 3.3 1.4 6.2 3.7 8.4L5.5 29l5.6-2.7c1.5.5 3.1.7 4.9.7 7.2 0 13-5.4 13-12S23.2 3 16 3Z" fill="currentColor"/>
+      <circle cx="11.5" cy="14.5" r="2.2"/>
+      <circle cx="20.5" cy="14.5" r="2.2"/>
+    </symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.6c-.6.5-1.3.1-1.3-.6V16A2.5 2.5 0 0 1 4 13.5v-8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 8.5h8M8 11.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-video" viewBox="0 0 24 24"><rect x="2.8" y="6" width="13" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.8 10.4 4.3-2.6c.5-.3 1.1.1 1.1.6v7.2c0 .6-.6.9-1.1.6l-4.3-2.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-mic-off" viewBox="0 0 24 24"><path d="M15 10.5V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 4.6 2.5M5.5 11a6.5 6.5 0 0 0 10.4 5.2M18.5 11c0 .6-.1 1.2-.2 1.7M12 17.5V21M4 4l16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.3l1.4-2h5.6l1.4 2h1.3A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.3" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+    <symbol id="i-cam-off" viewBox="0 0 24 24"><path d="M9.5 6h5l1.4 2h1.6A2.5 2.5 0 0 1 20 10.5v6M17 19H6.5A2.5 2.5 0 0 1 4 16.5v-8c0-1 .6-1.9 1.5-2.3M10 10.2a3.3 3.3 0 0 0 4.5 4.6M4 4l16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4.5M5 4.5c4-2 7 2 11 0l2-.8v9.5l-2 .8c-4 2-7-2-11 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4.5 12 3.3 5.1c-.2-1 .9-1.8 1.8-1.3l14.6 7.3c.9.4.9 1.7 0 2.2L5.1 20.6c-.9.5-2-.3-1.8-1.3L4.5 12Zm0 0h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shirt" viewBox="0 0 24 24"><path d="m8.5 3.5-5 2.5 1.8 4.2 2.2-.9V20.5h9V9.3l2.2.9 1.8-4.2-5-2.5a3.5 3.5 0 0 1-7 0Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    <symbol id="i-mask" viewBox="0 0 24 24"><path d="M3 8.5c3-1.3 6-1.5 9-.4 3-1.1 6-.9 9 .4 0 5.5-2.6 8-5.5 8-1.6 0-2.6-1.2-3.5-2.6-.9 1.4-1.9 2.6-3.5 2.6C5.6 16.5 3 14 3 8.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M7.5 11h1.5M15 11h1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  </svg>
+
+  <!-- ============ HOME ============ -->
+  <div id="home" class="view view--home">
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="the mog home">
+        <svg class="brand__mark" aria-hidden="true"><use href="#i-logo"/></svg>
+        <span class="brand__name">the mog</span>
+      </a>
+      <p class="online"><span class="online__dot" aria-hidden="true"></span><span><span data-online>—</span> online now</span></p>
+    </header>
+
+    <main class="home">
+      <section class="hero">
+        <h1 class="hero__title">Talk to someone <span class="hero__accent">new.</span></h1>
+        <p class="hero__lead">Anonymous text and video chat with random strangers. Add a few interests and we'll try to pair you with someone into the same stuff.</p>
+      </section>
+
+      <section class="start-card" aria-labelledby="start-heading">
+        <div id="home-alert" class="alert" role="alert" hidden></div>
+
+        <label class="field-label" for="tag-input">What are you into? <span class="field-label__hint">optional</span></label>
+        <div id="tag-box" class="tag-box">
+          <ul id="tag-list" class="tag-list" aria-label="Your interests"></ul>
+          <input id="tag-input" class="tag-input" type="text" autocomplete="off" enterkeyhint="done"
+                 maxlength="32" placeholder="music, gaming, anime… press Enter">
+        </div>
+        <label class="check">
+          <input id="fallback" type="checkbox" checked>
+          <span>If nobody shares my interests, match me with anyone</span>
+        </label>
+
+        <h2 id="start-heading" class="start-card__heading">Start chatting</h2>
+        <div class="start-buttons">
+          <button id="start-text" class="start-btn start-btn--text" type="button">
+            <svg class="start-btn__icon" aria-hidden="true"><use href="#i-text"/></svg>
+            <span class="start-btn__label">Text</span>
+            <span class="start-btn__sub">Just words</span>
+          </button>
+          <button id="start-video" class="start-btn start-btn--video" type="button">
+            <svg class="start-btn__icon" aria-hidden="true"><use href="#i-video"/></svg>
+            <span class="start-btn__label">Video</span>
+            <span class="start-btn__sub">Face to face</span>
+          </button>
+        </div>
+
+        <label id="agree-row" class="check check--agree">
+          <input id="agree" type="checkbox">
+          <span>I'm 18 or older and I'll follow the rules below.</span>
+        </label>
+      </section>
+
+      <section class="rules" aria-labelledby="rules-heading">
+        <h2 id="rules-heading" class="rules__heading">House rules</h2>
+        <ul class="rules__list">
+          <li class="rule">
+            <svg class="rule__icon" aria-hidden="true"><use href="#i-heart"/></svg>
+            <div><h3>Be decent</h3><p>No harassment, hate or threats. Skip anyone you don't vibe with.</p></div>
+          </li>
+          <li class="rule">
+            <svg class="rule__icon" aria-hidden="true"><use href="#i-shirt"/></svg>
+            <div><h3>Keep it clothed</h3><p>No nudity or sexual content on camera. Reported users get blocked.</p></div>
+          </li>
+          <li class="rule">
+            <svg class="rule__icon" aria-hidden="true"><use href="#i-mask"/></svg>
+            <div><h3>Stay anonymous</h3><p>Don't share your name, address, socials or anything that identifies you.</p></div>
+          </li>
+          <li class="rule">
+            <svg class="rule__icon" aria-hidden="true"><use href="#i-flag"/></svg>
+            <div><h3>Report bad actors</h3><p>Use the flag in a chat. Repeat offenders are temporarily banned.</p></div>
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Chats aren't stored. Video goes directly between you and the stranger (peer-to-peer). Strangers may not be who they say they are — be careful.</p>
+    </footer>
+  </div>
+
+  <!-- ============ CHAT ============ -->
+  <div id="chat" class="view view--chat" hidden>
+    <header class="chat-header">
+      <a id="chat-home" class="brand brand--small" href="/" aria-label="Leave chat and go home">
+        <svg class="brand__mark" aria-hidden="true"><use href="#i-logo"/></svg>
+        <span class="brand__name">the mog</span>
+      </a>
+      <span id="mode-pill" class="pill">Text chat</span>
+      <p class="online online--compact"><span class="online__dot" aria-hidden="true"></span><span><span data-online>—</span> online</span></p>
+    </header>
+
+    <main id="chat-main" class="chat-main">
+      <section id="videos" class="videos" aria-label="Video" hidden>
+        <div class="tile tile--remote">
+          <video id="remote-video" autoplay playsinline></video>
+          <div id="remote-overlay" class="tile__overlay">
+            <span class="spinner" aria-hidden="true"></span>
+            <span id="remote-status">Looking for a stranger…</span>
+          </div>
+          <span class="tile__tag">Stranger</span>
+        </div>
+        <div class="tile tile--local">
+          <video id="local-video" autoplay playsinline muted></video>
+          <span class="tile__tag">You</span>
+          <div class="tile__controls">
+            <button id="toggle-mic" class="icon-btn" type="button" aria-pressed="false" aria-label="Mute microphone" title="Mute microphone">
+              <svg aria-hidden="true"><use href="#i-mic"/></svg>
+            </button>
+            <button id="toggle-cam" class="icon-btn" type="button" aria-pressed="false" aria-label="Turn camera off" title="Turn camera off">
+              <svg aria-hidden="true"><use href="#i-cam"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Chat">
+        <div class="panel__bar">
+          <p class="status"><span id="status-dot" class="status__dot" aria-hidden="true"></span><span id="status-text">Not connected</span></p>
+          <div class="panel__tools">
+            <label class="switch" title="Automatically find a new stranger when one leaves">
+              <input id="auto-next" type="checkbox">
+              <span class="switch__track" aria-hidden="true"></span>
+              <span>Auto-next</span>
+            </label>
+            <button id="report" class="tool-btn" type="button" disabled>
+              <svg aria-hidden="true"><use href="#i-flag"/></svg><span>Report</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="log" class="log" role="log" aria-live="polite" aria-relevant="additions"></div>
+        <p id="typing" class="typing" hidden><span class="typing__dots" aria-hidden="true"><i></i><i></i><i></i></span>Stranger is typing</p>
+
+        <form id="composer" class="composer" autocomplete="off">
+          <button id="next" class="next-btn" type="button">
+            <span id="next-label" class="next-btn__label">New</span>
+            <kbd class="next-btn__kbd">Esc</kbd>
+          </button>
+          <textarea id="message" class="composer__input" rows="1" placeholder="Type a message…" aria-label="Message" disabled></textarea>
+          <button id="send" class="send-btn" type="submit" aria-label="Send" disabled>
+            <svg aria-hidden="true"><use href="#i-send"/></svg>
+          </button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ REPORT DIALOG ============ -->
+  <dialog id="report-dialog" class="dialog" aria-labelledby="report-title">
+    <form id="report-form" method="dialog" class="dialog__body">
+      <h2 id="report-title">Report this stranger</h2>
+      <p class="dialog__lead">They'll be disconnected and you won't be matched with them again this session.</p>
+      <fieldset class="reasons">
+        <legend class="visually-hidden">Reason</legend>
+        <label><input type="radio" name="reason" value="harassment" checked> Harassment or hate</label>
+        <label><input type="radio" name="reason" value="nudity"> Nudity or sexual content</label>
+        <label><input type="radio" name="reason" value="spam"> Spam or bot</label>
+        <label><input type="radio" name="reason" value="underage"> Seems underage</label>
+        <label><input type="radio" name="reason" value="other"> Something else</label>
+      </fieldset>
+      <div class="dialog__actions">
+        <button class="btn btn--ghost" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn btn--danger" value="report">Report &amp; skip</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
